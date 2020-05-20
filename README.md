@@ -36,6 +36,7 @@ Currently the project has implemented the following features:
 
 - Implementing a Rich Text Editor based on `draft-js`.
 - Saving article to db.
+- Dictation capabilities.
 
 The project is still far from complete. There are still plenty of features to implement. Feel free to clone the project and code along. I would love to see what you come up with.
 Find me on twitter at [**_@mkinyugo_**](https://twitter.com/mkinyugo)
