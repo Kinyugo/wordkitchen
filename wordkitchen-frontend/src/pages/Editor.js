@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import gql from "graphql-tag";
 import { useMutation } from "@apollo/react-hooks";
 import { editorStateFromRaw, editorStateToJSON } from "megadraft";
+import { Modifier, EditorState } from "draft-js";
 
 import { makeStyles } from "@material-ui/core/styles";
 
@@ -12,6 +13,8 @@ import AppBar from "../components/AppBar";
 import Editor from "../components/Editor/Editor";
 import Snackbar from "../components/info/Snackbar";
 import TitleModal from "../components/EditorPage/Title/TitleModal";
+import MicButton from "../components/EditorPage/Title/MicButton";
+import { transcribe } from "../API/SpeechRecognitionAPI";
 
 const ADD_ARTICLE = gql`
   mutation AddArticle($title: String!, $body: String!) {
@@ -42,7 +45,7 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: theme.spacing(8),
     },
   },
-  saveButton: {
+  actionButtons: {
     position: "fixed",
     bottom: theme.spacing(5),
     right: theme.spacing(5),
@@ -55,7 +58,16 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down("sm")]: {
       marginRight: theme.spacing(0),
       right: theme.spacing(2),
+      marginBottom: theme.spacing(1),
     },
+    display: "flex",
+    flexDirection: "column",
+  },
+  saveButton: {
+    marginTop: theme.spacing(1),
+  },
+  micButton: {
+    marginBottom: theme.spacing(1),
   },
 }));
 export default function () {
@@ -63,6 +75,16 @@ export default function () {
 
   // Mutation to save the article's content to the DB
   const [addArticle, { data, error }] = useMutation(ADD_ARTICLE);
+
+  // Handles the state of the SpeechRecognitionAPI
+  const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    if (isListening) {
+      return transcribe(insertTranscribedText);
+    }
+  }, [isListening]);
+
   // Handles the editor's state
   const [editorState, setEditorState] = useState(editorStateFromRaw(null));
 
@@ -113,6 +135,29 @@ export default function () {
     });
   };
 
+  // Inserts the transcribed text into the editor's state.
+  function insertTranscribedText(text) {
+    const currentContent = editorState.getCurrentContent();
+    const currentSelection = editorState.getSelection();
+
+    const newContent = Modifier.insertText(
+      currentContent,
+      currentSelection,
+      text
+    );
+
+    const newEditorState = EditorState.push(
+      editorState,
+      newContent,
+      "insert-characters"
+    );
+
+    // Ensure that the selected state of the editor is after the inserted
+    // content to avoid overwritting in subsequent insertions.
+    setEditorState(
+      EditorState.forceSelection(newEditorState, newContent.getSelectionAfter())
+    );
+  }
   return (
     <div className={classes.root}>
       <AppBar title="Editor" />
@@ -134,16 +179,26 @@ export default function () {
             : "Saving your article..."
         }
       />
-      {/* Save Button */}
-      <Fab
-        color="secondary"
-        size="medium"
-        aria-label="save"
-        onClick={() => onSave()}
-        className={classes.saveButton}
-      >
-        <SaveIcon />
-      </Fab>
+      {/* Action  Buttons */}
+      <div className={classes.actionButtons}>
+        <Fab
+          size="small"
+          aria-label="mic"
+          className={classes.micButton}
+          onClick={() => setIsListening(!isListening)}
+        >
+          <MicButton />
+        </Fab>
+        <Fab
+          color="secondary"
+          size="medium"
+          aria-label="save"
+          onClick={() => onSave()}
+          className={classes.saveButton}
+        >
+          <SaveIcon />
+        </Fab>
+      </div>
       <Editor
         editorState={editorState}
         onChange={onChange}

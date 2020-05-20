@@ -11,6 +11,7 @@
     "apollo-cache-inmemory": "^1.6.5",
     "apollo-client": "^2.6.8",
     "apollo-link-http": "^1.5.16",
+    "draft-js": "^0.11.5",
     "graphql": "^14.6.0",
     "graphql-tag": "^2.10.3",
     "megadraft": "^0.6.15",
